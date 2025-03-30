@@ -4,6 +4,7 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 import time
+import os
 
 # ---------------------------
 # 1. Definición del modelo
@@ -40,7 +41,8 @@ class MLP(nn.Module):
 def trace_handler(p):
     output = p.key_averages().table(sort_by="self_cuda_time_total", row_limit=10)
     print(output)
-    p.export_chrome_trace("/tmp/trace_" + str(p.step_num) + ".json")
+    os.makedirs("executions", exist_ok=True)
+    p.export_chrome_trace("executions/trace_" + str(p.step_num) + ".json")
 
 profile_kwargs = ProfileKwargs(
     activities=["cpu", "cuda"],
@@ -105,3 +107,10 @@ end_time = time.time() - start_time
 # ---------------------------
 print(f"Inference time: {end_time:.4f} s")
 print(f"Test loss: {test_loss.item():.4f}")
+
+# 🔍 Mostrar trazas explícitamente
+print("\n --- GPU Profiling: Top 10 operaciones más costosas ---")
+print(prof.key_averages().table(sort_by="self_cuda_time_total", row_limit=10))
+
+print("\n --- CPU Profiling: Top 10 operaciones más costosas ---")
+print(prof.key_averages().table(sort_by="self_cpu_time_total", row_limit=10))
