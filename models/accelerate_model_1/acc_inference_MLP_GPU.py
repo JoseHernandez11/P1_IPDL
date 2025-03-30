@@ -73,12 +73,19 @@ lags_df = pd.read_csv("data/air_quality_20202021_inference_laAljorra.csv")
 X_test = torch.tensor(lags_df.iloc[:, :-1].values, dtype=torch.float32)
 y_test = torch.tensor(lags_df.iloc[:, -1].values, dtype=torch.float32)
 
+
 # ---------------------------
 # 5. Inicializar Accelerator
 # ---------------------------
 accelerator = Accelerator(kwargs_handlers=[profile_kwargs])
-model, X_test, y_test = accelerator.prepare(model, X_test, y_test)
 device = accelerator.device
+
+# Preparar el modelo (es importante hacerlo antes de mover los tensores)
+model = accelerator.prepare(model)
+
+# Mover tensores manualmente al dispositivo correcto
+X_test = X_test.to(device)
+y_test = y_test.to(device)
 
 # ---------------------------
 # 6. Inferencia perfilada
