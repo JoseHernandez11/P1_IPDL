@@ -45,10 +45,16 @@ class MLP(nn.Module):
 # ---------------------------
 # 3. Cargar modelo entrenado
 # ---------------------------
+
+def load_model(model_path):
+    model = MLP()
+    model.load_state_dict(torch.load(model_path, map_location=torch.device("cpu")))
+    model.eval()
+    return model
+
+
 model_path = "trained_models/model1_IDL.pth"
-model = MLP()
-model.load_state_dict(torch.load(model_path))
-model.eval()
+model = load_model(model_path)
 
 # ---------------------------
 # 4. Configurar Accelerate
