@@ -18,14 +18,10 @@ SOS_token = 0
 EOS_token = 1
 
 # ---------- Perfilado ----------
-def trace_handler(p):
-    print("\n--- CPU Profiling ---")
-    print(p.key_averages().table(sort_by="self_cpu_time_total", row_limit=10))
-
 profile_kwargs = ProfileKwargs(
     activities=["cpu"],
-    schedule_option={"wait": 5, "warmup": 1, "active": 3, "repeat": 2, "skip_first": 1},
-    on_trace_ready=trace_handler
+    record_shapes=True,
+    with_stack=True
 )
 
 accelerator = Accelerator(cpu=True, kwargs_handlers=[profile_kwargs])
@@ -178,10 +174,12 @@ def train(train_loader, encoder, decoder, n_epochs, lr=0.001):
     criterion = nn.NLLLoss()
     encoder, decoder, encoder_opt, decoder_opt, train_loader, criterion = accelerator.prepare(
         encoder, decoder, encoder_opt, decoder_opt, train_loader, criterion)
-    for epoch in range(1, n_epochs + 1):
-        with accelerator.profile():
+    with accelerator.profile() as prof:
+        for epoch in range(1, n_epochs + 1):
             loss = train_epoch(train_loader, encoder, decoder, encoder_opt, decoder_opt, criterion)
-        print(f"Epoch {epoch}, Loss: {loss:.4f}")
+            print(f"Epoch {epoch}, Loss: {loss:.4f}")
+    print("\n--- CPU Profiling Summary (global) ---")
+    print(prof.key_averages().table(sort_by="self_cpu_time_total", row_limit=10))
 
 # ---------- Evaluación ----------
 def evaluate(encoder, decoder, sentence):
