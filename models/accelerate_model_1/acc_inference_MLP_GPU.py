@@ -51,7 +51,7 @@ def trace_handler(p):
     trace_counter += 1
 
 profile_kwargs = ProfileKwargs(
-    activities=[ProfilerActivity.CPU, ProfilerActivity.CUDA],
+    activities=["cpu", "cuda"],
     schedule_option=schedule(
         wait=5,
         warmup=1,
