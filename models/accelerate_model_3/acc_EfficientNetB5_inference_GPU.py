@@ -28,7 +28,7 @@ model.eval()
 # ---------- Crear un batch de entrada ----------
 batch_size = 128
 input_images = torch.rand((batch_size, 3, 456, 456))
-
+input_images = input_images.to(device)
 # ---------- Preparar con accelerator ----------
 model, input_images = accelerator.prepare(model, input_images)
 
@@ -44,7 +44,3 @@ with accelerator.profile() as prof:
         outputs = model(input_images)
 
 elapsed_time = time.time() - start_time
-print(f"\nTiempo total: {elapsed_time:.4f} s")
-
-print("\n--- GPU profiling (top 10) ---")
-print(prof.key_averages().table(sort_by="self_cuda_time_total", row_limit=10))
