@@ -5,7 +5,6 @@ import torch.nn as nn
 import torch.optim as optim
 import time
 import os
-from torch.profiler import ProfilerActivity, schedule
 
 # ---------------------------
 # 1. Definición del modelo
@@ -46,19 +45,18 @@ def trace_handler(p):
     output = p.key_averages().table(sort_by="self_cuda_time_total", row_limit=10)
     print(output)
     os.makedirs("executions", exist_ok=True)
-    trace_path = f"executions/trace_{trace_counter}.json"
-    p.export_chrome_trace(trace_path)
+    p.export_chrome_trace(f"executions/trace_{trace_counter}.json")
     trace_counter += 1
 
 profile_kwargs = ProfileKwargs(
-    activities=["cpu", "cuda"],
-    schedule_option=schedule(
-        wait=5,
-        warmup=1,
-        active=3,
-        repeat=2,
-        skip_first=1,
-    ),
+    activities=["cpu", "cuda"],  # Aquí deben ser strings
+    schedule_option={            # Pasamos el diccionario, no el objeto schedule
+        "wait": 5,
+        "warmup": 1,
+        "active": 3,
+        "repeat": 2,
+        "skip_first": 1,
+    },
     on_trace_ready=trace_handler,
     record_shapes=True,
     with_stack=True
@@ -115,7 +113,7 @@ end_time = time.time() - start_time
 print(f"Inference time: {end_time:.4f} s")
 print(f"Test loss: {test_loss.item():.4f}")
 
-# 🔍 Mostrar trazas explícitamente (si el profiler está disponible)
+# 🔍 Mostrar trazas explícitamente
 if prof:
     print("\n --- GPU Profiling: Top 10 operaciones más costosas ---")
     print(prof.key_averages().table(sort_by="self_cuda_time_total", row_limit=10))
