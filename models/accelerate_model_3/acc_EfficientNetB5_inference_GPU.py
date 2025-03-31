@@ -50,7 +50,7 @@ input_images = torch.rand((batch_size, 3, 456, 456))
 
 # ---------- Preparar modelo e input con accelerator ----------
 model, input_images = accelerator.prepare(model, input_images)
-input_images = input_images.half()
+
 # ---------- Iniciar perfilado e inferencia ----------
 start_time = time.time()
 
@@ -61,16 +61,3 @@ with accelerator.profile() as prof:
 end_time = time.time()
 execution_time = end_time - start_time
 
-# ---------- Tiempo total ----------
-print(f"\n⏱️ Tiempo total de ejecución: {execution_time:.4f} segundos")
-
-# ---------- Mostrar resumen explícito aquí también por si no se usa on_trace_ready ----------
-print("\n✅ Resumen explícito adicional:")
-
-# Imprimir resumen GPU
-print("\n--- GPU Profiling: Top 10 operaciones más costosas (por self_cuda_time_total) ---")
-print(prof.key_averages().table(sort_by="self_cuda_time_total", row_limit=10))
-
-# Imprimir resumen CPU
-print("\n--- CPU Profiling: Top 10 operaciones más costosas (por self_cpu_time_total) ---")
-print(prof.key_averages().table(sort_by="self_cpu_time_total", row_limit=10))
