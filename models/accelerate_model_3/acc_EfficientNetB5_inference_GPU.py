@@ -6,9 +6,19 @@ from torchvision.models import efficientnet_b5
 
 # ---------- Inicializar profiler y accelerator ----------
 def trace_handler(p):
-    trace_path = "traces/trace_0.json"
+    # Exportar trace para Chrome
+    trace_path = f"traces/trace_{p.step_num}.json"
     p.export_chrome_trace(trace_path)
-    print("Archivo de perfil guardado en:", trace_path)
+    print(f"\n Archivo de perfil guardado en: {trace_path}")
+
+    # Imprimir resumen GPU
+    print("\n--- GPU Profiling (on_trace_ready): Top 10 operaciones más costosas ---")
+    print(p.key_averages().table(sort_by="self_cuda_time_total", row_limit=10))
+
+    # Imprimir resumen CPU
+    print("\n--- CPU Profiling (on_trace_ready): Top 10 operaciones más costosas ---")
+    print(p.key_averages().table(sort_by="self_cpu_time_total", row_limit=10))
+
 
 profile_kwargs = ProfileKwargs(
     activities=["cpu", "cuda"],
