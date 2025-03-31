@@ -10,9 +10,9 @@ from accelerate import Accelerator, ProfileKwargs
 # ---------- Configuración del profiling ----------
 def trace_handler(p):
     # Exportar trace para Chrome
-    trace_path = f"/tmp/trace_{p.step_num}.json"
+    trace_path = f"/traces/trace_{p.step_num}.json"
     p.export_chrome_trace(trace_path)
-    print(f"\n🧠 Archivo de perfil guardado en: {trace_path}")
+    print(f"\n Archivo de perfil guardado en: {trace_path}")
 
     # Imprimir resumen GPU
     print("\n--- GPU Profiling (on_trace_ready): Top 10 operaciones más costosas ---")
@@ -80,7 +80,7 @@ class TinyVGG(nn.Module):
 
 # ---------- Modelo, pérdida y optimizador ----------
 num_classes = len(train_dataset.classes)
-print(f"🔠 Clases: {train_dataset.classes}")
+print(f" Clases: {train_dataset.classes}")
 
 model = TinyVGG(input_shape=3, hidden_units=64, output_shape=num_classes)
 criterion = nn.CrossEntropyLoss()
@@ -115,21 +115,12 @@ with accelerator.profile() as prof:
             correct += (predicted == labels).sum().item()
 
         accuracy = 100 * correct / total
-        print(f"📍 Epoch [{epoch+1}/{epochs}], Loss: {running_loss:.4f}, Accuracy: {accuracy:.2f}%")
+        print(f" Epoch [{epoch+1}/{epochs}], Loss: {running_loss:.4f}, Accuracy: {accuracy:.2f}%")
 
 end_time = time.time()
 print(f"\n⏱️ Entrenamiento completado en {end_time - start_time:.2f} segundos")
 
-# ---------- Impresión explícita del profiling ----------
-print("\n📊 🔍 TRAZA FINAL (al finalizar entrenamiento):")
 
-# GPU
-print("\n--- GPU Profiling: Top 10 operaciones más costosas ---")
-print(prof.key_averages().table(sort_by="self_cuda_time_total", row_limit=10))
-
-# CPU
-print("\n--- CPU Profiling: Top 10 operaciones más costosas ---")
-print(prof.key_averages().table(sort_by="self_cpu_time_total", row_limit=10))
 
 # ---------- Evaluación ----------
 model.eval()
@@ -152,8 +143,8 @@ with torch.no_grad():
 avg_test_loss = test_loss / len(test_loader)
 test_accuracy = 100 * correct / total
 
-print(f"\n🧪 Test Loss: {avg_test_loss:.4f}")
-print(f"✅ Test Accuracy: {test_accuracy:.2f}%")
+print(f"\n Test Loss: {avg_test_loss:.4f}")
+print(f" Test Accuracy: {test_accuracy:.2f}%")
 
 # ---------- Guardar modelo ----------
 os.makedirs("trained_models", exist_ok=True)
