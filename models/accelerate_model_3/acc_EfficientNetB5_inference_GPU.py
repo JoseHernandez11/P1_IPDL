@@ -50,7 +50,7 @@ input_images = torch.rand((batch_size, 3, 456, 456))
 
 # ---------- Preparar modelo e input con accelerator ----------
 model, input_images = accelerator.prepare(model, input_images)
-
+input_images = input_images.half()
 # ---------- Iniciar perfilado e inferencia ----------
 start_time = time.time()
 
