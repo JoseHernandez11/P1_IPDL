@@ -75,7 +75,6 @@ lags_df = pd.read_csv("data/air_quality_20202021_inference_laAljorra.csv")
 X_test = torch.tensor(lags_df.iloc[:, :-1].values, dtype=torch.float32)
 y_test = torch.tensor(lags_df.iloc[:, -1].values, dtype=torch.float32)
 
-
 # ---------------------------
 # 5. Inicializar Accelerator
 # ---------------------------
@@ -97,8 +96,8 @@ start_time = time.time()
 
 with accelerator.profile() as prof:
     with torch.no_grad():
-        y_pred = model(X_test)
-        test_loss = criterion(y_pred.squeeze(), y_test)
+        y_pred = model(X_test).squeeze()
+        test_loss = criterion(y_pred, y_test)
 
 end_time = time.time() - start_time
 
@@ -109,8 +108,11 @@ print(f"Inference time: {end_time:.4f} s")
 print(f"Test loss: {test_loss.item():.4f}")
 
 # 🔍 Mostrar trazas explícitamente
-print("\n --- GPU Profiling: Top 10 operaciones más costosas ---")
-print(prof.key_averages().table(sort_by="self_cuda_time_total", row_limit=10))
+if prof:
+    print("\n --- GPU Profiling: Top 10 operaciones más costosas ---")
+    print(prof.key_averages().table(sort_by="self_cuda_time_total", row_limit=10))
 
-print("\n --- CPU Profiling: Top 10 operaciones más costosas ---")
-print(prof.key_averages().table(sort_by="self_cpu_time_total", row_limit=10))
+    print("\n --- CPU Profiling: Top 10 operaciones más costosas ---")
+    print(prof.key_averages().table(sort_by="self_cpu_time_total", row_limit=10))
+else:
+    print("Profiler was not initialized correctly or did not capture any data.")
