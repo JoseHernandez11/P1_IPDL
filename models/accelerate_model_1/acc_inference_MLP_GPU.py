@@ -109,10 +109,15 @@ print(f"Test loss: {test_loss.item():.4f}")
 
 # 🔍 Mostrar trazas explícitamente
 if prof:
+
+    
+    print("\n --- CPU Profiling: Top 10 operaciones más costosas ---")
+    print(prof.key_averages().table(sort_by="self_cpu_time_total", row_limit=10))
+
     print("\n --- GPU Profiling: Top 10 operaciones más costosas ---")
     print(prof.key_averages().table(sort_by="self_cuda_time_total", row_limit=10))
 
-    print("\n --- CPU Profiling: Top 10 operaciones más costosas ---")
-    print(prof.key_averages().table(sort_by="self_cpu_time_total", row_limit=10))
+    # print("\n --- CPU Profiling: Top 10 operaciones más costosas ---")
+    # print(prof.key_averages().table(sort_by="self_cpu_time_total", row_limit=10))
 else:
     print("Profiler was not initialized correctly or did not capture any data.")
