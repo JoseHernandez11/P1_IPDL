@@ -37,6 +37,7 @@ profile_kwargs = ProfileKwargs(
     activities=["cpu", "cuda"],
     record_shapes=True,
     with_stack=True,
+    schedule_option={"wait": 0, "warmup": 1, "active": 2, "repeat": 1},
     on_trace_ready=trace_handler
 )
 
@@ -448,11 +449,7 @@ def train(train_dataloader, encoder, decoder, n_epochs, learning_rate=0.001,
                 torch.save(accelerator.unwrap_model(encoder).state_dict(), encoder_path)
                 torch.save(accelerator.unwrap_model(decoder).state_dict(), decoder_path)
 
-    # Extra profiling resumen (si se quiere desde prof directamente)
-    print("\n--- GPU Profiling Summary (final) ---")
-    print(prof.key_averages().table(sort_by="self_cuda_time_total", row_limit=10))
-    print("\n--- CPU Profiling Summary (final) ---")
-    print(prof.key_averages().table(sort_by="self_cpu_time_total", row_limit=10))
+
 
     return epoch_losses
 
