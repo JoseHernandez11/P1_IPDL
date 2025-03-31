@@ -38,30 +38,28 @@ class MLP(nn.Module):
 # ---------------------------
 # 2. Función de perfilado
 # ---------------------------
-trace_counter = 0
 
 def trace_handler(p):
-    global trace_counter
-    output = p.key_averages().table(sort_by="self_cuda_time_total", row_limit=10)
-    print(output)
-    os.makedirs("executions", exist_ok=True)
-    p.export_chrome_trace(f"executions/trace_{trace_counter}.json")
-    trace_counter += 1
+    # Exportar trace para Chrome
+    trace_path = f"traces/trace_{p.step_num}.json"
+    p.export_chrome_trace(trace_path)
+    print(f"\n Archivo de perfil guardado en: {trace_path}")
+
+    # Imprimir resumen GPU
+    print("\n--- GPU Profiling (on_trace_ready): Top 10 operaciones más costosas ---")
+    print(p.key_averages().table(sort_by="self_cuda_time_total", row_limit=10))
+
+    # Imprimir resumen CPU
+    print("\n--- CPU Profiling (on_trace_ready): Top 10 operaciones más costosas ---")
+    print(p.key_averages().table(sort_by="self_cpu_time_total", row_limit=10))
+
 
 profile_kwargs = ProfileKwargs(
-    activities=["cpu", "cuda"],  # Aquí deben ser strings
-    schedule_option={            # Pasamos el diccionario, no el objeto schedule
-        "wait": 5,
-        "warmup": 1,
-        "active": 3,
-        "repeat": 2,
-        "skip_first": 1,
-    },
-    on_trace_ready=trace_handler,
+    activities=["cpu", "cuda"],
     record_shapes=True,
-    with_stack=True
+    with_stack=True,
+    on_trace_ready=trace_handler
 )
-
 # ---------------------------
 # 3. Cargar modelo
 # ---------------------------
@@ -113,9 +111,3 @@ end_time = time.time() - start_time
 print(f"Inference time: {end_time:.4f} s")
 print(f"Test loss: {test_loss.item():.4f}")
 
-# 🔍 Mostrar trazas explícitamente
-if prof:
-    print("\n --- GPU Profiling: Top 10 operaciones más costosas ---")
-    print(prof.key_averages().table(sort_by="self_cuda_time_total", row_limit=10))
-else:
-    print("Profiler was not initialized correctly or did not capture any data.")
