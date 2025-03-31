@@ -2,11 +2,13 @@ from accelerate import Accelerator, ProfileKwargs
 import torch
 import time
 import os
+from torchvision.models import efficientnet_b5
 
-# 1) Callback para profiler
+# ---------- Inicializar profiler y accelerator ----------
 def trace_handler(p):
-    print("Archivo de perfil guardado.")
-    p.export_chrome_trace("traces/trace_0.json")
+    trace_path = "traces/trace_0.json"
+    p.export_chrome_trace(trace_path)
+    print("Archivo de perfil guardado en:", trace_path)
 
 profile_kwargs = ProfileKwargs(
     activities=["cpu", "cuda"],
@@ -15,29 +17,34 @@ profile_kwargs = ProfileKwargs(
     on_trace_ready=trace_handler
 )
 
-# 2) Accelerator
 accelerator = Accelerator(kwargs_handlers=[profile_kwargs])
 device = accelerator.device
-print(f"Usando dispositivo: {device}")
+print(f"Usando dispositivo de la Accelerator: {device}")
 
-# 3) Modelo y modo eval
-from torchvision.models import efficientnet_b5
+# ---------- Cargar modelo ----------
 model = efficientnet_b5(weights="IMAGENET1K_V1")
 model.eval()
 
-# 4) Crear datos de prueba
+# ---------- Crear un batch de entrada ----------
 batch_size = 128
-input_images = torch.rand((batch_size, 3, 456, 456))  # CPU, float32
+input_images = torch.rand((batch_size, 3, 456, 456))
 
-# 5) Preparar con accelerator
+# ---------- Preparar con accelerator ----------
 model, input_images = accelerator.prepare(model, input_images)
-# A PARTIR DE AQUÍ, modelo y input_images están en GPU
 
-# 6) Perfilado e inferencia
+# Aquí imprimimos en qué dispositivo se encuentra todo:
+print("Dispositivo del modelo:", next(model.parameters()).device)
+print("Dispositivo de input_images:", input_images.device)
+
+# ---------- Perfilado e inferencia ----------
 start_time = time.time()
+
 with accelerator.profile() as prof:
     with torch.no_grad():
         outputs = model(input_images)
-end_time = time.time() - start_time
 
-print(f"\nTiempo total de ejecución: {end_time:.4f} segundos")
+elapsed_time = time.time() - start_time
+print(f"\nTiempo total: {elapsed_time:.4f} s")
+
+print("\n--- GPU profiling (top 10) ---")
+print(prof.key_averages().table(sort_by="self_cuda_time_total", row_limit=10))
