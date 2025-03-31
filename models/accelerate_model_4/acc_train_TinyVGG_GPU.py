@@ -10,7 +10,7 @@ from accelerate import Accelerator, ProfileKwargs
 # ---------- Configuración del profiling ----------
 def trace_handler(p):
     # Exportar trace para Chrome
-    trace_path = f"/traces/trace_{p.step_num}.json"
+    trace_path = f"traces/trace_{p.step_num}.json"
     p.export_chrome_trace(trace_path)
     print(f"\n Archivo de perfil guardado en: {trace_path}")
 
