@@ -24,7 +24,7 @@ transform = transforms.Compose([
 
 # Dataset y DataLoader
 print(os.getcwd())
-data_dir = "IPDL\\P1\\models\\model_4\\data"
+data_dir = "data"
 train_dir = os.path.join(data_dir, "train")
 test_dir = os.path.join(data_dir, "test")
 
@@ -122,5 +122,5 @@ print(f"Test Loss: {avg_test_loss:.4f}")
 print(f"Test Accuracy: {test_accuracy:.2f}%")
 
 # Guardar modelo
-os.makedirs("IPDL\\P1\\models\\model_4\\trained_models", exist_ok=True)
-torch.save(model.state_dict(), "IPDL\\P1\\models\\model_4\\trained_models/tinyvgg_model.pth")
+os.makedirs("trained_models", exist_ok=True)
+torch.save(model.state_dict(), "trained_models/tinyvgg_model.pth")
