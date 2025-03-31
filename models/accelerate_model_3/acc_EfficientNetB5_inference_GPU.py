@@ -7,32 +7,31 @@ import os
 
 # ---------- Inicializar profiler y accelerator ----------
 def trace_handler(p):
-    # Exportar trazado para Chrome
-    trace_path = f"/tmp/trace_{p.step_num}.json"
+    # Exportar trace para Chrome
+    trace_path = f"traces/trace_{p.step_num}.json"
     p.export_chrome_trace(trace_path)
+    print(f"\n Archivo de perfil guardado en: {trace_path}")
 
-    print(f"\n🧠 Archivo de perfil guardado en: {trace_path}")
-
-    # Imprimir resumen explícito de GPU
-    print("\n--- GPU Profiling: Top 10 operaciones más costosas (por self_cuda_time_total) ---")
+    # Imprimir resumen GPU
+    print("\n--- GPU Profiling (on_trace_ready): Top 10 operaciones más costosas ---")
     print(p.key_averages().table(sort_by="self_cuda_time_total", row_limit=10))
 
-    # Imprimir resumen explícito de CPU
-    print("\n--- CPU Profiling: Top 10 operaciones más costosas (por self_cpu_time_total) ---")
+    # Imprimir resumen CPU
+    print("\n--- CPU Profiling (on_trace_ready): Top 10 operaciones más costosas ---")
     print(p.key_averages().table(sort_by="self_cpu_time_total", row_limit=10))
 
 
 profile_kwargs = ProfileKwargs(
-    activities=["cpu", "cuda"],  # Ambos perfiles
+    activities=["cpu", "cuda"],
     record_shapes=True,
     with_stack=True,
     on_trace_ready=trace_handler
 )
 
 # ---------- Inicializar Accelerator ----------
-accelerator = Accelerator(cpu=True, kwargs_handlers=[profile_kwargs])
+accelerator = Accelerator(kwargs_handlers=[profile_kwargs])
 device = accelerator.device
-print(f"✅ Usando dispositivo: {device}")
+print(f" Usando dispositivo: {device}")
 
 # ---------- Cargar modelo ----------
 model = efficientnet_b5(weights="IMAGENET1K_V1")
