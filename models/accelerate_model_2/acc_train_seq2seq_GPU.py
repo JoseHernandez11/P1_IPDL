@@ -1,3 +1,4 @@
+
 from accelerate import Accelerator, ProfileKwargs
 from io import open
 import unicodedata
@@ -19,8 +20,13 @@ EOS_token = 1
 
 # ---------- Perfilado ----------
 def trace_handler(p):
-    os.makedirs("/tmp/accelerate_traces", exist_ok=True)
-    p.export_chrome_trace(f"/tmp/accelerate_traces/trace_final.json")
+    output_cuda = p.key_averages().table(sort_by="self_cuda_time_total", row_limit=10)
+    output_cpu = p.key_averages().table(sort_by="self_cpu_time_total", row_limit=10)
+    print("\n--- GPU Profiling: Top 10 operations by CUDA time ---")
+    print(output_cuda)
+    print("\n--- CPU Profiling: Top 10 operations by CPU time ---")
+    print(output_cpu)
+    p.export_chrome_trace("traces/trace_final.json")
 
 profile_kwargs = ProfileKwargs(
     activities=["cpu", "cuda"],
@@ -179,14 +185,10 @@ def train(train_loader, encoder, decoder, n_epochs, lr=0.001):
     criterion = nn.NLLLoss()
     encoder, decoder, encoder_opt, decoder_opt, train_loader, criterion = accelerator.prepare(
         encoder, decoder, encoder_opt, decoder_opt, train_loader, criterion)
-    with accelerator.profile() as prof:
+    with accelerator.profile():
         for epoch in range(1, n_epochs + 1):
             loss = train_epoch(train_loader, encoder, decoder, encoder_opt, decoder_opt, criterion)
             print(f"Epoch {epoch}, Loss: {loss:.4f}")
-    print("\n--- GPU Profiling Summary (global) ---")
-    print(prof.key_averages().table(sort_by="self_cuda_time_total", row_limit=10))
-    print("\n--- CPU Profiling Summary (global) ---")
-    print(prof.key_averages().table(sort_by="self_cpu_time_total", row_limit=10))
 
 # ---------- Evaluación ----------
 def evaluate(encoder, decoder, sentence):
