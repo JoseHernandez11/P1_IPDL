@@ -301,7 +301,7 @@ def train(train_dataloader, encoder, decoder, n_epochs, learning_rate=0.001,
         encoder, decoder, encoder_optimizer, decoder_optimizer, train_dataloader, criterion
     )
 
-    with accelerator.profile() as prof:
+    with accelerator:
         for epoch in range(1, n_epochs + 1):
             loss = train_epoch(train_dataloader, encoder, decoder, encoder_optimizer, decoder_optimizer, criterion)
             print_loss_total += loss
@@ -309,9 +309,7 @@ def train(train_dataloader, encoder, decoder, n_epochs, learning_rate=0.001,
             epoch_losses.append(loss)
 
         
-        # # ---------- Mostrar resumen de perfilado ----------
-        # print("\n--- CPU Profiling: Top 10 operaciones más costosas ---")
-        # print(prof.key_averages().table(sort_by="self_cpu_time_total", row_limit=10))
+
 
     
 
