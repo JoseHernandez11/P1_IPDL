@@ -52,7 +52,7 @@ class MLP(nn.Module):
 
 def load_model(model_path):
     model = MLP()
-    model.load_state_dict(torch.load(model_path))
+    model.load_state_dict(torch.load(model_path, map_location=device))
     model.eval()
     return model
 
