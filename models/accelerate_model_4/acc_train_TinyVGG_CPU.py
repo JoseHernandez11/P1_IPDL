@@ -17,7 +17,7 @@ profile_kwargs = ProfileKwargs(
 # ---------- Inicializar Accelerator ----------
 accelerator = Accelerator(cpu=True, kwargs_handlers=[profile_kwargs])
 device = accelerator.device
-print(f"✅ Usando dispositivo: {device}")
+print(f"Usando dispositivo: {device}")
 
 # ---------- Dataset ----------
 transform = transforms.Compose([
@@ -64,7 +64,7 @@ class TinyVGG(nn.Module):
 
 # ---------- Modelo, pérdida y optimizador ----------
 num_classes = len(train_dataset.classes)
-print(f"🔠 Clases: {train_dataset.classes}")
+print(f" Clases: {train_dataset.classes}")
 
 model = TinyVGG(input_shape=3, hidden_units=64, output_shape=num_classes)
 criterion = nn.CrossEntropyLoss()
@@ -102,10 +102,10 @@ with accelerator.profile() as prof:
         print(f"📍 Epoch [{epoch+1}/{epochs}], Loss: {running_loss:.4f}, Accuracy: {accuracy:.2f}%")
 
 end_time = time.time()
-print(f"\n⏱️ Entrenamiento completado en {end_time - start_time:.2f} segundos")
+print(f"\n Entrenamiento completado en {end_time - start_time:.2f} segundos")
 
 # ---------- Impresión explícita del perfilado CPU ----------
-print("\n📊 🔍 TRAZA FINAL CPU (al finalizar entrenamiento):")
+print("\n  TRAZA FINAL CPU (al finalizar entrenamiento):")
 print("\n--- CPU Profiling: Top 10 operaciones más costosas ---")
 print(prof.key_averages().table(sort_by="self_cpu_time_total", row_limit=10))
 
@@ -130,8 +130,8 @@ with torch.no_grad():
 avg_test_loss = test_loss / len(test_loader)
 test_accuracy = 100 * correct / total
 
-print(f"\n🧪 Test Loss: {avg_test_loss:.4f}")
-print(f"✅ Test Accuracy: {test_accuracy:.2f}%")
+print(f"\n Test Loss: {avg_test_loss:.4f}")
+print(f" Test Accuracy: {test_accuracy:.2f}%")
 
 # ---------- Guardar modelo ----------
 os.makedirs("trained_models", exist_ok=True)
