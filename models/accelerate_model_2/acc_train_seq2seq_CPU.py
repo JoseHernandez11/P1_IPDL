@@ -275,38 +275,9 @@ def train(train_dataloader, encoder, decoder, n_epochs, learning_rate=0.001,
             plot_loss_total += loss
             epoch_losses.append(loss)
 
-            if epoch % print_every == 0:
-                print_loss_avg = print_loss_total / print_every
-                print_loss_total = 0
-                print('%s (%d %d%%) %.4f' % (timeSince(start, epoch / n_epochs),
-                                             epoch, epoch / n_epochs * 100, print_loss_avg))
-
-            if epoch % plot_every == 0:
-                plot_loss_avg = plot_loss_total / plot_every
-                plot_losses.append(plot_loss_avg)
-                plot_loss_total = 0
-
-            # Guardado condicional del modelo
-            save_flag = False
-            if len(epoch_losses) > 2:
-                if epoch_losses[-1] < min(epoch_losses[:-1]):
-                    print(f"La época {epoch} ha mejorado la anterior. Prev loss: {min(epoch_losses[:-1])}, current loss: {epoch_losses[-1]}")
-                    save_flag = True
-
-            if save_directory and (epoch == 1 or epoch % 20 == 0 or save_flag):
-                os.makedirs(save_directory, exist_ok=True)
-                if epoch == 1 or save_flag:
-                    encoder_path = os.path.join(save_directory, 'encoder_best_model.pt')
-                    decoder_path = os.path.join(save_directory, 'decoder_best_model.pt')
-                elif epoch % 20 == 0:
-                    encoder_path = os.path.join(save_directory, f'encoder_{epoch}_model.pt')
-                    decoder_path = os.path.join(save_directory, f'decoder_{epoch}_model.pt')
-                torch.save(accelerator.unwrap_model(encoder).state_dict(), encoder_path)
-                torch.save(accelerator.unwrap_model(decoder).state_dict(), decoder_path)
-
-    # Mostrar resumen del perfilado
-    print("\n--- CPU Profiling: Top 10 operaciones más costosas ---")
-    print(prof.key_averages().table(sort_by="self_cpu_time_total", row_limit=10))
+        # Mostrar resumen del perfilado
+        print("\n--- CPU Profiling: Top 10 operaciones más costosas ---")
+        print(prof.key_averages().table(sort_by="self_cpu_time_total", row_limit=10))
 
     return epoch_losses
 
