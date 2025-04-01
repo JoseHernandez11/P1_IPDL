@@ -22,10 +22,10 @@ from torch.utils.data import TensorDataset, DataLoader, RandomSampler
 
 
 profile_kwargs = ProfileKwargs(
-    activities=["cpu"],  # Puede incluir "cpu" y/o "cuda"
-    record_shapes=True
+    activities=["cpu"],
+    record_shapes=True,
+    use_legacy_profiler=True
 )
-
 accelerator = Accelerator(kwargs_handlers=[profile_kwargs])
 device = accelerator.device
 print(f"Usando dispositivo de la Accelerator: {device}")
