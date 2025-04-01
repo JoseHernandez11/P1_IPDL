@@ -10,6 +10,17 @@ import os
 
 model_path = "trained_models/model1_IDL.pth"
 
+## 0. Configuración del dispositivo de inferencia.
+
+device = (
+    "cuda"
+    if torch.cuda.is_available()
+    else "mps"
+    if torch.backends.mps.is_available()
+    else "cpu"
+)
+print(f"Using {device} device")
+
 ## 1. Carga del dataset.
 lags_df = pd.read_csv("data/air_quality_20202021_inference_laAljorra.csv")
 seed = 123

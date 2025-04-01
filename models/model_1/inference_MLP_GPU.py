@@ -10,7 +10,7 @@ import os
 
 model_path = "trained_models/model1_IDL.pth"
 
-## 0. Configuración del dispositivo de entrenamiento.
+## 0. Configuración del dispositivo de inferencia.
 
 device = (
     "cuda"
