@@ -338,9 +338,9 @@ def train(train_dataloader, encoder, decoder, n_epochs, learning_rate=0.001,
                 torch.save(accelerator.unwrap_model(encoder).state_dict(), encoder_path)
                 torch.save(accelerator.unwrap_model(decoder).state_dict(), decoder_path)
         
-        # ---------- Mostrar resumen de perfilado ----------
-        print("\n--- CPU Profiling: Top 10 operaciones más costosas ---")
-        print(prof.key_averages().table(sort_by="self_cpu_time_total", row_limit=10))
+        # # ---------- Mostrar resumen de perfilado ----------
+        # print("\n--- CPU Profiling: Top 10 operaciones más costosas ---")
+        # print(prof.key_averages().table(sort_by="self_cpu_time_total", row_limit=10))
 
     
 
