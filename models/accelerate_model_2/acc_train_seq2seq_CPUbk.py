@@ -114,16 +114,16 @@ def filterPairs(pairs):
 
 def prepareData(lang1, lang2, reverse=False):
     input_lang, output_lang, pairs = readLangs(lang1, lang2, reverse)
-    print("Read %s sentence pairs" % len(pairs))
+    #print("Read %s sentence pairs" % len(pairs))
     pairs = filterPairs(pairs)
-    print("Trimmed to %s sentence pairs" % len(pairs))
-    print("Counting words...")
+    #print("Trimmed to %s sentence pairs" % len(pairs))
+    #print("Counting words...")
     for pair in pairs:
         input_lang.addSentence(pair[0])
         output_lang.addSentence(pair[1])
-    print("Counted words:")
-    print(input_lang.name, input_lang.n_words)
-    print(output_lang.name, output_lang.n_words)
+    #print("Counted words:")
+    #print(input_lang.name, input_lang.n_words)
+    #print(output_lang.name, output_lang.n_words)
     return input_lang, output_lang, pairs
 
 input_lang, output_lang, pairs = prepareData('eng', 'spa', True)
@@ -309,9 +309,9 @@ def train(train_dataloader, encoder, decoder, n_epochs, learning_rate=0.001,
             epoch_losses.append(loss)
 
         
-        # ---------- Mostrar resumen de perfilado ----------
-        print("\n--- CPU Profiling: Top 10 operaciones más costosas ---")
-        print(prof.key_averages().table(sort_by="self_cpu_time_total", row_limit=10))
+        # # ---------- Mostrar resumen de perfilado ----------
+        # print("\n--- CPU Profiling: Top 10 operaciones más costosas ---")
+        # print(prof.key_averages().table(sort_by="self_cpu_time_total", row_limit=10))
 
     
 
