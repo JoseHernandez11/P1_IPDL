@@ -338,14 +338,6 @@ def train(train_dataloader, encoder, decoder, n_epochs, learning_rate=0.001,
 
     return epoch_losses
 
-        
-
-
-    
-
-    return epoch_losses
-
-
 
 ### Entrenamiento de la red
 
