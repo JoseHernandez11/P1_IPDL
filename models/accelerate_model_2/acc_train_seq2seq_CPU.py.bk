@@ -1,4 +1,5 @@
-# Importación de librerías
+#Importación de librerías
+
 from __future__ import unicode_literals, print_function, division
 from io import open
 import unicodedata
@@ -13,28 +14,34 @@ import numpy as np
 import pandas as pd
 import time
 import math
-from accelerate import Accelerator
+from accelerate import Accelerator, ProfileKwargs
 from torch.utils.data import TensorDataset, DataLoader, RandomSampler
-from torch.profiler import profile, ProfilerActivity  # Profiler de PyTorch
 
-# Inicializar Accelerator
-accelerator = Accelerator()
+# ---------- Inicializar profiler y accelerator ----------
+
+
+
+profile_kwargs = ProfileKwargs(
+    activities=["cpu"],
+    record_shapes=True
+    )
+accelerator = Accelerator(kwargs_handlers=[profile_kwargs])
 device = accelerator.device
 print(f"Usando dispositivo de la Accelerator: {device}")
 
-# ---------- Definición de constantes y funciones auxiliares ----------
+## Procesamiento del dataset
 
 SOS_token = 0
 EOS_token = 1
 
-# Clase para manejar el vocabulario
+### Definición de clase lenguaje
 class Lang:
     def __init__(self, name):
         self.name = name
         self.word2index = {}
         self.word2count = {}
         self.index2word = {0: "SOS", 1: "EOS"}
-        self.n_words = 2  # Contar SOS y EOS
+        self.n_words = 2  # Count SOS and EOS
 
     def addSentence(self, sentence):
         for word in sentence.split(' '):
@@ -49,43 +56,58 @@ class Lang:
         else:
             self.word2count[word] += 1
 
-# Funciones de normalización de texto
+# Turn a Unicode string to plain ASCII, thanks to
+# https://stackoverflow.com/a/518232/2809427
 def unicodeToAscii(s):
     return ''.join(
         c for c in unicodedata.normalize('NFD', s)
         if unicodedata.category(c) != 'Mn'
     )
 
+# Lowercase, trim, and remove non-letter characters
 def normalizeString(s):
     s = unicodeToAscii(s.lower().strip())
     s = re.sub(r"([.!?])", r" \1", s)
     s = re.sub(r"[^a-zA-Z!?]+", r" ", s)
     return s.strip()
 
-# Leer y preparar los datos
 def readLangs(lang1, lang2, reverse=False):
     print("Reading lines...")
-    lines = open('data/%s-%s.txt' % (lang1, lang2), encoding='utf-8').read().strip().split('\n')
+
+    # Read the file and split into lines
+    lines = open('data/%s-%s.txt' % (lang1, lang2), encoding='utf-8').\
+        read().strip().split('\n')
+
+    #Fixed pairs definition
     pairs = []
     for l in lines:
         l_fixed = l.split("CC-BY")[0]
         individual_pair = []
         for sentence in l_fixed.split('\t')[:-1]:
             individual_pair.append(normalizeString(sentence))
+
         pairs.append(individual_pair)
+
+
+    # Reverse pairs, make Lang instances
     if reverse:
         pairs = [list(reversed(p)) for p in pairs]
         input_lang = Lang(lang2)
         output_lang = Lang(lang1)
     else:
+        pairs = [list(p) for p in pairs]
         input_lang = Lang(lang1)
         output_lang = Lang(lang2)
+
     return input_lang, output_lang, pairs
 
 MAX_LENGTH = 10
 
+
 def filterPair(p):
-    return len(p[0].split(' ')) < MAX_LENGTH and len(p[1].split(' ')) < MAX_LENGTH
+    return len(p[0].split(' ')) < MAX_LENGTH and \
+        len(p[1].split(' ')) < MAX_LENGTH 
+
 
 def filterPairs(pairs):
     return [pair for pair in pairs if filterPair(pair)]
@@ -104,7 +126,8 @@ def prepareData(lang1, lang2, reverse=False):
     print(output_lang.name, output_lang.n_words)
     return input_lang, output_lang, pairs
 
-# Funciones para medir el tiempo
+input_lang, output_lang, pairs = prepareData('eng', 'spa', True)
+
 def asMinutes(s):
     m = math.floor(s / 60)
     s -= m * 60
@@ -117,13 +140,15 @@ def timeSince(since, percent):
     rs = es - s
     return '%s (- %s)' % (asMinutes(s), asMinutes(rs))
 
-# ---------- Definición de la red neuronal ----------
+### Definición de la red neuronal
 
-# Codificador (Encoder)
+
+# Definición clase enconder con una única capa oculta
 class EncoderRNN(nn.Module):
     def __init__(self, input_size, hidden_size, dropout_p=0.1):
         super(EncoderRNN, self).__init__()
         self.hidden_size = hidden_size
+
         self.embedding = nn.Embedding(input_size, hidden_size)
         self.gru = nn.GRU(hidden_size, hidden_size, batch_first=True)
         self.dropout = nn.Dropout(dropout_p)
@@ -133,7 +158,8 @@ class EncoderRNN(nn.Module):
         output, hidden = self.gru(embedded)
         return output, hidden
 
-# Atención de Bahdanau
+# Definición clase decoder con atención de Bahdanau y  una única capa oculta
+  
 class BahdanauAttention(nn.Module):
     def __init__(self, hidden_size):
         super(BahdanauAttention, self).__init__()
@@ -144,11 +170,12 @@ class BahdanauAttention(nn.Module):
     def forward(self, query, keys):
         scores = self.Va(torch.tanh(self.Wa(query) + self.Ua(keys)))
         scores = scores.squeeze(2).unsqueeze(1)
+
         weights = F.softmax(scores, dim=-1)
         context = torch.bmm(weights, keys)
+
         return context, weights
 
-# Decodificador con atención
 class AttnDecoderRNN(nn.Module):
     def __init__(self, hidden_size, output_size, dropout_p=0.1):
         super(AttnDecoderRNN, self).__init__()
@@ -173,26 +200,34 @@ class AttnDecoderRNN(nn.Module):
             attentions.append(attn_weights)
 
             if target_tensor is not None:
-                decoder_input = target_tensor[:, i].unsqueeze(1)  # Teacher forcing
+                # Teacher forcing: Feed the target as the next input
+                decoder_input = target_tensor[:, i].unsqueeze(1) # Teacher forcing
             else:
+                # Without teacher forcing: use its own predictions as the next input
                 _, topi = decoder_output.topk(1)
-                decoder_input = topi.squeeze(-1).detach()
+                decoder_input = topi.squeeze(-1).detach()  # detach from history as input
 
         decoder_outputs = torch.cat(decoder_outputs, dim=1)
         decoder_outputs = F.log_softmax(decoder_outputs, dim=-1)
         attentions = torch.cat(attentions, dim=1)
+
         return decoder_outputs, decoder_hidden, attentions
 
+
     def forward_step(self, input, hidden, encoder_outputs):
-        embedded = self.dropout(self.embedding(input))
+        embedded =  self.dropout(self.embedding(input))
+
         query = hidden.permute(1, 0, 2)
         context, attn_weights = self.attention(query, encoder_outputs)
         input_gru = torch.cat((embedded, context), dim=2)
+
         output, hidden = self.gru(input_gru, hidden)
         output = self.out(output)
-        return output, hidden, attn_weights
 
+        return output, hidden, attn_weights
+    
 # Funciones auxiliares para el entrenamiento
+
 def indexesFromSentence(lang, sentence):
     return [lang.word2index[word] for word in sentence.split(' ')]
 
@@ -206,6 +241,8 @@ def tensorsFromPair(pair):
     target_tensor = tensorFromSentence(output_lang, pair[1])
     return (input_tensor, target_tensor)
 
+
+# Adaptamos `get_dataloader` para mover tensores a dispositivo
 def get_dataloader(batch_size):
     input_lang, output_lang, pairs = prepareData('eng', 'spa', True)
     n = len(pairs)
@@ -225,7 +262,7 @@ def get_dataloader(batch_size):
     train_dataloader = DataLoader(train_data, sampler=train_sampler, batch_size=batch_size)
     return input_lang, output_lang, train_dataloader
 
-# Entrenamiento por época
+# Adaptamos la función de entrenamiento por epoch con accelerator
 def train_epoch(dataloader, encoder, decoder, encoder_optimizer, decoder_optimizer, criterion):
     total_loss = 0
     for input_tensor, target_tensor in dataloader:
@@ -246,9 +283,9 @@ def train_epoch(dataloader, encoder, decoder, encoder_optimizer, decoder_optimiz
         total_loss += loss.item()
     return total_loss / len(dataloader)
 
-# Función principal de entrenamiento con profiler de PyTorch
+# Adaptamos la función principal `train` para usar `accelerator.prepare` y `accelerator.profile`
 def train(train_dataloader, encoder, decoder, n_epochs, learning_rate=0.001,
-          print_every=100, plot_every=100, save_directory=None):
+               print_every=100, plot_every=100, save_directory=None):
     start = time.time()
     plot_losses = []
     epoch_losses = []
@@ -259,16 +296,12 @@ def train(train_dataloader, encoder, decoder, n_epochs, learning_rate=0.001,
     decoder_optimizer = optim.Adam(decoder.parameters(), lr=learning_rate)
     criterion = nn.NLLLoss()
 
-    # Preparar todo con Accelerate
+    # Preparamos todo con accelerate
     encoder, decoder, encoder_optimizer, decoder_optimizer, train_dataloader, criterion = accelerator.prepare(
         encoder, decoder, encoder_optimizer, decoder_optimizer, train_dataloader, criterion
     )
 
-    # Usar el profiler de PyTorch
-    with profile(
-        activities=[ProfilerActivity.CPU],  # Perfilamos solo la CPU (puedes agregar CUDA si usas GPU)
-        record_shapes=True  # Registrar formas de tensores para análisis detallado
-    ) as prof:
+    with accelerator.profile() as prof:
         for epoch in range(1, n_epochs + 1):
             loss = train_epoch(train_dataloader, encoder, decoder, encoder_optimizer, decoder_optimizer, criterion)
             print_loss_total += loss
@@ -279,14 +312,14 @@ def train(train_dataloader, encoder, decoder, n_epochs, learning_rate=0.001,
                 print_loss_avg = print_loss_total / print_every
                 print_loss_total = 0
                 print('%s (%d %d%%) %.4f' % (timeSince(start, epoch / n_epochs),
-                                             epoch, epoch / n_epochs * 100, print_loss_avg))
+                                            epoch, epoch / n_epochs * 100, print_loss_avg))
 
             if epoch % plot_every == 0:
                 plot_loss_avg = plot_loss_total / plot_every
                 plot_losses.append(plot_loss_avg)
                 plot_loss_total = 0
 
-            # Guardado condicional del modelo
+            # Guardado condicional (igual que antes)
             save_flag = False
             if len(epoch_losses) > 2:
                 if epoch_losses[-1] < min(epoch_losses[:-1]):
@@ -303,19 +336,23 @@ def train(train_dataloader, encoder, decoder, n_epochs, learning_rate=0.001,
                     decoder_path = os.path.join(save_directory, f'decoder_{epoch}_model.pt')
                 torch.save(accelerator.unwrap_model(encoder).state_dict(), encoder_path)
                 torch.save(accelerator.unwrap_model(decoder).state_dict(), decoder_path)
+        
+        # # ---------- Mostrar resumen de perfilado ----------
+        # print("\n--- CPU Profiling: Top 10 operaciones más costosas ---")
+        # print(prof.key_averages().table(sort_by="self_cpu_time_total", row_limit=10))
 
-    # Mostrar resumen del perfilado
-    print("\n--- CPU Profiling: Top 10 operaciones más costosas ---")
-    print(prof.key_averages().table(sort_by="self_cpu_time_total", row_limit=10))
+    
 
     return epoch_losses
 
-# ---------- Entrenamiento de la red ----------
+
+
+### Entrenamiento de la red
 
 start_time = time.time()
 hidden_size = 128
 batch_size = 32
-epochs = 2  # Puedes aumentar este valor según tus necesidades
+epochs = 2
 input_lang, output_lang, train_dataloader = get_dataloader(batch_size)
 
 encoder = EncoderRNN(input_lang.n_words, hidden_size).to(device)
@@ -323,4 +360,5 @@ decoder = AttnDecoderRNN(hidden_size, output_lang.n_words).to(device)
 
 train(train_dataloader, encoder, decoder, epochs, print_every=1)
 end_time = time.time()
-print(f"Training time: {end_time - start_time} s")
+print(f"Training time: {end_time-start_time} s")
+
