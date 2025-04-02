@@ -14,20 +14,10 @@ import numpy as np
 import pandas as pd
 import time
 import math
-from accelerate import Accelerator, ProfileKwargs
+from accelerate import Accelerator
+
+
 from torch.utils.data import TensorDataset, DataLoader, RandomSampler
-
-# ---------- Inicializar profiler y accelerator ----------
-
-
-
-profile_kwargs = ProfileKwargs(
-    activities=["cpu"],
-    record_shapes=True
-    )
-accelerator = Accelerator(kwargs_handlers=[profile_kwargs])
-device = accelerator.device
-print(f"Usando dispositivo de la Accelerator: {device}")
 
 ## Procesamiento del dataset
 
@@ -114,34 +104,30 @@ def filterPairs(pairs):
 
 def prepareData(lang1, lang2, reverse=False):
     input_lang, output_lang, pairs = readLangs(lang1, lang2, reverse)
-    #print("Read %s sentence pairs" % len(pairs))
+    print("Read %s sentence pairs" % len(pairs))
     pairs = filterPairs(pairs)
-    #print("Trimmed to %s sentence pairs" % len(pairs))
-    #print("Counting words...")
+    print("Trimmed to %s sentence pairs" % len(pairs))
+    print("Counting words...")
     for pair in pairs:
         input_lang.addSentence(pair[0])
         output_lang.addSentence(pair[1])
-    #print("Counted words:")
-    #print(input_lang.name, input_lang.n_words)
-    #print(output_lang.name, output_lang.n_words)
+    print("Counted words:")
+    print(input_lang.name, input_lang.n_words)
+    print(output_lang.name, output_lang.n_words)
     return input_lang, output_lang, pairs
 
 input_lang, output_lang, pairs = prepareData('eng', 'spa', True)
 
-def asMinutes(s):
-    m = math.floor(s / 60)
-    s -= m * 60
-    return '%dm %ds' % (m, s)
-
-def timeSince(since, percent):
-    now = time.time()
-    s = now - since
-    es = s / (percent)
-    rs = es - s
-    return '%s (- %s)' % (asMinutes(s), asMinutes(rs))
-
 ### Definición de la red neuronal
+# Configuración de accelerator 
+accelerator = Accelerator(cpu=True)
+device = accelerator.device
+print(f"Using device: {device}")
 
+
+# Dispositivo de entrenamiento
+device = "cpu"
+print(f"Using {device} device")
 
 # Definición clase enconder con una única capa oculta
 class EncoderRNN(nn.Module):
@@ -228,6 +214,19 @@ class AttnDecoderRNN(nn.Module):
     
 # Funciones auxiliares para el entrenamiento
 
+def asMinutes(s):
+    m = math.floor(s / 60)
+    s -= m * 60
+    return '%dm %ds' % (m, s)
+
+def timeSince(since, percent):
+    now = time.time()
+    s = now - since
+    es = s / (percent)
+    rs = es - s
+    return '%s (- %s)' % (asMinutes(s), asMinutes(rs))
+
+
 def indexesFromSentence(lang, sentence):
     return [lang.word2index[word] for word in sentence.split(' ')]
 
@@ -240,7 +239,6 @@ def tensorsFromPair(pair):
     input_tensor = tensorFromSentence(input_lang, pair[0])
     target_tensor = tensorFromSentence(output_lang, pair[1])
     return (input_tensor, target_tensor)
-
 
 # Adaptamos `get_dataloader` para mover tensores a dispositivo
 def get_dataloader(batch_size):
@@ -340,6 +338,7 @@ def train(train_dataloader, encoder, decoder, n_epochs, learning_rate=0.001,
 
 
 ### Entrenamiento de la red
+
 
 start_time = time.time()
 hidden_size = 128
