@@ -17,6 +17,8 @@ import math
 from accelerate import Accelerator, ProfileKwargs
 from torch.utils.data import TensorDataset, DataLoader, RandomSampler
 
+os.chdir("/home/josemariahernandezn/IPDL/P1_IPDL/models/accelerate_model_2/")
+
 # ---------- Inicializar profiler y accelerator ----------
 def trace_handler(p):
     # Exportar trace para Chrome

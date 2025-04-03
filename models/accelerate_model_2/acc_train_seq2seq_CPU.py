@@ -19,6 +19,8 @@ from accelerate import Accelerator
 
 from torch.utils.data import TensorDataset, DataLoader, RandomSampler
 
+os.chdir("/home/josemariahernandezn/IPDL/P1_IPDL/models/accelerate_model_2/")
+
 ## Procesamiento del dataset
 
 SOS_token = 0
