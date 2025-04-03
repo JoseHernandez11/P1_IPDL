@@ -4,7 +4,7 @@ import torchvision.transforms as transforms
 from torchvision.models import efficientnet_b5
 import time
 import os
-
+os.chdir("/home/josemariahernandezn/IPDL/P1_IPDL/models/accelerate_model_3/")
 # ---------- Inicializar profiler y accelerator ----------
 profile_kwargs = ProfileKwargs(
     activities=["cpu"],

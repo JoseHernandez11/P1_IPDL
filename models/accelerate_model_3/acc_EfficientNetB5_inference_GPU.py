@@ -3,7 +3,7 @@ import torch
 import time
 import os
 from torchvision.models import efficientnet_b5
-
+os.chdir("/home/josemariahernandezn/IPDL/P1_IPDL/models/accelerate_model_3/")
 # ---------- Inicializar profiler y accelerator ----------
 def trace_handler(p):
     # Exportar trace para Chrome

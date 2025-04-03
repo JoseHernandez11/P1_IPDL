@@ -6,7 +6,7 @@ import torch.optim as optim
 from torchvision import datasets, transforms
 from torch.utils.data import DataLoader
 from accelerate import Accelerator, ProfileKwargs
-
+os.chdir("/home/josemariahernandezn/IPDL/P1_IPDL/models/accelerate_model_4/")
 # ---------- Configuración del profiling ----------
 def trace_handler(p):
     # Exportar trace para Chrome
