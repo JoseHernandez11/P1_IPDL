@@ -6,6 +6,9 @@ import torch.optim as optim
 import time
 import os
 
+os.chdir("/home/josemariahernandezn/IPDL/P1_IPDL/models/accelerate_model_1/")
+
+
 # ---------------------------
 # 1. Definición del modelo
 # ---------------------------
