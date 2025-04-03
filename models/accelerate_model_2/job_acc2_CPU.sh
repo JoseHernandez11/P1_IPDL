@@ -4,7 +4,7 @@
 #SBATCH --mem=4G
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
-#SBATCH --time=00:40:00
+#SBATCH --time=00:10:00
 #SBATCH --job-name=acc2_CPU
 #SBATCH --output=acc2_CPU.log
 
